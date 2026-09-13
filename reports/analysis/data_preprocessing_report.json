@@ -1,0 +1,46 @@
+{
+  "generated_at_utc": "2026-09-13T09:55:58.298263+00:00",
+  "raw_rows": 1030,
+  "cleaned_rows": 1005,
+  "duplicates_removed": 25,
+  "missing_values_after_cleaning": 0,
+  "feature_columns": [
+    "cement",
+    "blast_furnace_slag",
+    "fly_ash",
+    "water",
+    "superplasticizer",
+    "coarse_aggregate",
+    "fine_aggregate",
+    "age"
+  ],
+  "target_column": "compressive_strength",
+  "train_rows": 804,
+  "test_rows": 201,
+  "test_size": 0.2,
+  "random_state": 42,
+  "scaler": "StandardScaler fitted on training features only",
+  "skewed_columns_absolute_over_1": [
+    "age"
+  ],
+  "correlation_with_target": {
+    "cement": 0.4882833447468997,
+    "blast_furnace_slag": 0.10337406972388095,
+    "fly_ash": -0.08064814690710956,
+    "water": -0.26962400865578456,
+    "superplasticizer": 0.34420888207647343,
+    "coarse_aggregate": -0.14471749875701528,
+    "fine_aggregate": -0.1864481459469417,
+    "age": 0.3373669316044719
+  },
+  "artifacts": {
+    "cleaned_data": "data\\processed\\concrete_data_cleaned.csv",
+    "train_features": "data\\interim\\X_train.csv",
+    "test_features": "data\\interim\\X_test.csv",
+    "train_target": "data\\interim\\y_train.csv",
+    "test_target": "data\\interim\\y_test.csv",
+    "scaled_train_features": "data\\interim\\X_train_scaled.csv",
+    "scaled_test_features": "data\\interim\\X_test_scaled.csv",
+    "scaler": "models\\preprocessing\\standard_scaler.joblib"
+  }
+}
