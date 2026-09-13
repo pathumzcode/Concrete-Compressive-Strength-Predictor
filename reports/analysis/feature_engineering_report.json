@@ -1,0 +1,29 @@
+Updated 03_feature_engineering.ipynb using the corrected step order.
+
+Implemented:
+
+Six feature-set comparisons
+Shared KFold(n_splits=5, shuffle=True, random_state=42)
+Pipeline(StandardScaler(), model) for every CV comparison
+Scaler refitted independently inside every fold
+Winner selected after cross-validation
+Final scaler fitted only after selection on the complete training set
+Final scaler applied to train and test data
+Engineered datasets and comparison results saved
+Feature-engineering report generated
+Validation passed successfully.
+
+Selected result:
+
+Feature set: ratios
+Model: gradient_boosting
+Original features: 8
+Engineered features: 27
+Selected features: 16
+Generated files:
+
+feature_engineering_report.json
+feature_set_comparison.csv
+feature_scaler.joblib
+Engineered train/test datasets in interim
+The unrelated change in 01_data_exploration.ipynb remains untouched.
