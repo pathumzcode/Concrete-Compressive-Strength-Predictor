@@ -1,0 +1,33 @@
+{
+    "model": "Random Forest",
+    "feature_columns": [
+        "cement",
+        "blast_furnace_slag",
+        "fly_ash",
+        "water",
+        "superplasticizer",
+        "coarse_aggregate",
+        "fine_aggregate",
+        "age"
+    ],
+    "target": "compressive_strength",
+    "train_rows": 728,
+    "test_rows": 183,
+    "best_parameters": {
+        "model__max_depth": null,
+        "model__n_estimators": 200
+    },
+    "test_metrics": {
+        "MAE": 4.363917895524331,
+        "MSE": 33.4620358729421,
+        "RMSE": 5.784637920643098,
+        "R2": 0.8717227566055656,
+        "Train_R2": 0.9715280628436864
+    },
+    "versions": {
+        "scikit-learn": "1.8.0",
+        "numpy": "2.3.5",
+        "pandas": "2.2.3",
+        "joblib": "1.5.3"
+    }
+}

@@ -1,0 +1,32 @@
+{
+    "model": "Linear Regression",
+    "feature_columns": [
+        "cement",
+        "blast_furnace_slag",
+        "fly_ash",
+        "water",
+        "superplasticizer",
+        "coarse_aggregate",
+        "fine_aggregate",
+        "age"
+    ],
+    "target": "compressive_strength",
+    "train_rows": 728,
+    "test_rows": 183,
+    "best_parameters": {
+        "model__fit_intercept": true
+    },
+    "test_metrics": {
+        "MAE": 6.009991707506049,
+        "MSE": 59.71497069856615,
+        "RMSE": 7.72754622752696,
+        "R\u00b2": 0.7710817160175979,
+        "Train_R\u00b2": 0.7068430861562576
+    },
+    "versions": {
+        "scikit-learn": "1.7.2",
+        "numpy": "2.3.5",
+        "pandas": "2.3.3",
+        "joblib": "1.5.2"
+    }
+}

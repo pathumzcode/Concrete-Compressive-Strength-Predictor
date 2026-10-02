@@ -159,3 +159,26 @@ pytest --cov=src
 ## License
 
 Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
+
+
+## Separate model-training notebooks
+
+- `notebooks/05_random_forest_model_training.ipynb`: Random Forest only.
+- `notebooks/05_linear_regression_model_training.ipynb`: Linear Regression only.
+
+Both notebooks follow the supplied student's code style, include Tamil explanations,
+and repeat the group's VarianceThreshold → StandardScaler → PCA(95%) inside training folds.
+Each file independently loads cleaned data, splits it, trains its model, runs 5-fold CV,
+tunes hyperparameters, evaluates MAE/MSE/RMSE/R², and saves/reloads its complete pipeline.
+Trained artifacts are in `models/trained/`. Reports and metadata are separate for each model.
+Scores describe the group's IQR-filtered cleaned population. Inputs are the eight original
+features; do not scale/PCA inputs before passing them to the saved pipeline.
+
+The existing prediction helper uses Random Forest:
+
+```bash
+python scripts/predict_classical_model.py 540 0 0 162 2.5 1055 676 28
+```
+
+Earlier team notebooks and artifacts are preserved. The previous combined continuation
+and its generated Decision Tree artifacts have been removed in favor of these two files.
