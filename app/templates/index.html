@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Concrete Strength Predictor</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: Inter, "Segoe UI", sans-serif;
+        color: #17231d;
+        background: #f1f5f1;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; padding: 48px 18px; }
+      main {
+        width: min(100%, 720px);
+        margin: 0 auto;
+        padding: 36px;
+        border: 1px solid #dce5dd;
+        border-radius: 20px;
+        background: #fff;
+        box-shadow: 0 18px 50px #1d392012;
+      }
+      .eyebrow {
+        margin: 0 0 8px;
+        color: #358253;
+        font-size: .78rem;
+        font-weight: 700;
+        letter-spacing: .12em;
+        text-transform: uppercase;
+      }
+      h1 { margin: 0; font-size: clamp(1.7rem, 5vw, 2.35rem); }
+      .intro { margin: 10px 0 28px; color: #5e6d63; line-height: 1.55; }
+      .fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+      label { display: block; margin-bottom: 7px; font-size: .92rem; font-weight: 650; }
+      label span { color: #758279; font-weight: 400; }
+      input {
+        width: 100%;
+        padding: 12px 13px;
+        border: 1px solid #ccd8ce;
+        border-radius: 9px;
+        color: inherit;
+        font: inherit;
+      }
+      input:focus { border-color: #358253; outline: 3px solid #35825320; }
+      input[aria-invalid="true"] { border-color: #b42318; }
+      .error { margin: 6px 0 0; color: #b42318; font-size: .82rem; }
+      button {
+        width: 100%;
+        margin-top: 24px;
+        padding: 14px 18px;
+        border: 0;
+        border-radius: 10px;
+        background: #246b40;
+        color: white;
+        cursor: pointer;
+        font: inherit;
+        font-weight: 700;
+      }
+      button:hover { background: #1b5834; }
+      .result {
+        margin-top: 22px;
+        padding: 20px;
+        border: 1px solid #bfe1c9;
+        border-radius: 12px;
+        background: #eff9f1;
+      }
+      .result p { margin: 0 0 4px; color: #45624e; }
+      .result strong { color: #174a2b; font-size: 2rem; }
+      @media (max-width: 560px) {
+        body { padding: 20px 12px; }
+        main { padding: 24px 18px; }
+        .fields { grid-template-columns: 1fr; gap: 14px; }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">Concrete mix estimator</p>
+      <h1>Predict compressive strength</h1>
+      <p class="intro">Enter the mix quantities per cubic metre and the curing age. The model returns an estimated strength in MPa.</p>
+
+      <form method="post">
+        <div class="fields">
+          {% for feature in features %}
+            <div>
+              <label for="{{ feature.name }}">{{ feature.label }} <span>({{ feature.unit }})</span></label>
+              <input
+                id="{{ feature.name }}"
+                name="{{ feature.name }}"
+                type="number"
+                step="any"
+                min="{{ 1 if feature.name == 'age' else 0 }}"
+                value="{{ values.get(feature.name, '') }}"
+                required
+                aria-invalid="{{ 'true' if feature.name in errors else 'false' }}"
+              >
+              {% if feature.name in errors %}
+                <p class="error">{{ errors[feature.name] }}</p>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+        <button type="submit">Estimate strength</button>
+      </form>
+
+      {% if prediction is not none %}
+        <section class="result" aria-live="polite">
+          <p>Estimated compressive strength</p>
+          <strong>{{ "%.2f"|format(prediction) }} MPa</strong>
+        </section>
+      {% endif %}
+    </main>
+  </body>
+</html>

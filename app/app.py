@@ -1,74 +1,85 @@
+import math
 from pathlib import Path
-import sys
 
 import joblib
 import pandas as pd
-
-FEATURE_COLUMNS = [
-    "cement",
-    "blast_furnace_slag",
-    "fly_ash",
-    "water",
-    "superplasticizer",
-    "coarse_aggregate",
-    "fine_aggregate",
-    "age",
-]
+from flask import Flask, render_template, request
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-MODEL_PATH = PROJECT_ROOT / "models" / "trained" / "neural_network_model.joblib"
-SCALER_PATH = PROJECT_ROOT / "models" / "preprocessing" / "neural_network_scaler.joblib"
+MODEL_PATH = PROJECT_ROOT / "models" / "trained" / "concrete_strength_model.pkl"
+
+FEATURES = (
+    {"name": "cement", "label": "Cement", "unit": "kg/m³"},
+    {"name": "blast_furnace_slag", "label": "Blast furnace slag", "unit": "kg/m³"},
+    {"name": "fly_ash", "label": "Fly ash", "unit": "kg/m³"},
+    {"name": "water", "label": "Water", "unit": "kg/m³"},
+    {"name": "superplasticizer", "label": "Superplasticizer", "unit": "kg/m³"},
+    {"name": "coarse_aggregate", "label": "Coarse aggregate", "unit": "kg/m³"},
+    {"name": "fine_aggregate", "label": "Fine aggregate", "unit": "kg/m³"},
+    {"name": "age", "label": "Curing age", "unit": "days"},
+)
+FEATURE_COLUMNS = tuple(feature["name"] for feature in FEATURES)
 
 
-def load_artifacts():
-    model = joblib.load(MODEL_PATH)
-    scaler = joblib.load(SCALER_PATH)
-    return model, scaler
+def create_app(model=None):
+    app = Flask(__name__)
+    app.config["MODEL"] = model
 
+    @app.route("/", methods=["GET", "POST"])
+    def index():
+        values = {}
+        errors = {}
+        prediction = None
 
-def predict_strength(model, scaler, values):
-    if len(values) != len(FEATURE_COLUMNS):
-        raise ValueError(
-            f"Expected {len(FEATURE_COLUMNS)} feature values, got {len(values)}."
+        if request.method == "POST":
+            for feature in FEATURES:
+                name = feature["name"]
+                raw_value = request.form.get(name, "").strip()
+                values[name] = raw_value
+
+                try:
+                    value = float(raw_value)
+                except ValueError:
+                    errors[name] = "Enter a valid number."
+                    continue
+
+                if not math.isfinite(value):
+                    errors[name] = "Enter a finite number."
+                elif value < 0:
+                    errors[name] = "Value cannot be negative."
+                elif name == "age" and value == 0:
+                    errors[name] = "Curing age must be greater than zero."
+                else:
+                    values[name] = value
+
+            if not errors:
+                model = app.config["MODEL"]
+                if model is None:
+                    model = joblib.load(MODEL_PATH)
+                    app.config["MODEL"] = model
+
+                inputs = pd.DataFrame(
+                    [[values[name] for name in FEATURE_COLUMNS]],
+                    columns=FEATURE_COLUMNS,
+                )
+                prediction = float(model.predict(inputs)[0])
+
+        return (
+            render_template(
+                "index.html",
+                features=FEATURES,
+                values=values,
+                errors=errors,
+                prediction=prediction,
+            ),
+            400 if errors else 200,
         )
 
-    df = pd.DataFrame([values], columns=FEATURE_COLUMNS)
-    scaled = scaler.transform(df)
-    prediction = model.predict(scaled)[0]
-    return float(prediction)
+    return app
 
 
-def run_prompted():
-    print("Enter concrete mix values:")
-    values = []
-    for feature in FEATURE_COLUMNS:
-        raw_value = input(f"{feature}: ")
-        values.append(float(raw_value))
-
-    model, scaler = load_artifacts()
-    prediction = predict_strength(model, scaler, values)
-    print(f"Predicted compressive strength: {prediction:.2f} MPa")
-
-
-def run_with_args(raw_args):
-    if len(raw_args) != len(FEATURE_COLUMNS):
-        raise ValueError(
-            "Provide exactly 8 numeric values in this order:\n"
-            + ", ".join(FEATURE_COLUMNS)
-        )
-
-    values = [float(value) for value in raw_args]
-    model, scaler = load_artifacts()
-    prediction = predict_strength(model, scaler, values)
-    print(f"Predicted compressive strength: {prediction:.2f} MPa")
+app = create_app()
 
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        try:
-            run_with_args(sys.argv[1:])
-        except ValueError as exc:
-            print(f"Error: {exc}")
-            raise SystemExit(1)
-    else:
-        run_prompted()
+    app.run(debug=True)
