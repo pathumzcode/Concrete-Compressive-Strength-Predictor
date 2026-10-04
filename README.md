@@ -120,11 +120,16 @@ python scripts/evaluate_model.py
 python scripts/generate_reports.py
 ```
 
-### Launch the Streamlit App
+### Launch the Flask Web App
 
 ```bash
-streamlit run app/app.py
+# Windows PowerShell (using the project venv)
+.\venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python app\app.py
 ```
+
+Open `http://127.0.0.1:5000` in your browser.
 
 ### Run Tests
 
