@@ -4,7 +4,7 @@ import json
 import joblib
 import pandas as pd
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import GridSearchCV, train_test_split
 from sklearn.neural_network import MLPRegressor
 from sklearn.preprocessing import StandardScaler
 
@@ -47,35 +47,73 @@ def train_model():
     X_train_scaled = scaler.fit_transform(X_train)
     X_test_scaled = scaler.transform(X_test)
 
-    model = MLPRegressor(
+    baseline_model = MLPRegressor(
         hidden_layer_sizes=(64, 32),
         activation="relu",
         solver="adam",
         random_state=42,
         max_iter=3000,
     )
+    baseline_model.fit(X_train_scaled, y_train)
+    baseline_r2 = r2_score(y_test, baseline_model.predict(X_test_scaled))
 
-    model.fit(X_train_scaled, y_train)
+    search = GridSearchCV(
+        estimator=MLPRegressor(
+            activation="relu", solver="adam", random_state=42, max_iter=3000
+        ),
+        param_grid={
+            "hidden_layer_sizes": [(64, 32), (128, 64)],
+            "alpha": [0.0001, 0.001],
+            "learning_rate_init": [0.0005, 0.001],
+        },
+        scoring="r2",
+        cv=3,
+        n_jobs=-1,
+        refit=True,
+    )
+    search.fit(X_train_scaled, y_train)
+    model = search.best_estimator_
     predictions = model.predict(X_test_scaled)
 
     r2 = r2_score(y_test, predictions)
     mae = mean_absolute_error(y_test, predictions)
-    rmse = mean_squared_error(y_test, predictions) ** 0.5
+    mse = mean_squared_error(y_test, predictions)
+    rmse = mse ** 0.5
 
     print(f"R²: {r2:.4f}")
+    print(f"Before tuning R2: {baseline_r2:.4f}")
+    print(f"After tuning R2: {r2:.4f}")
     print(f"MAE: {mae:.4f}")
+    print(f"MSE: {mse:.4f}")
     print(f"RMSE: {rmse:.4f}")
+    print(f"Best parameters: {search.best_params_}")
 
     joblib.dump(model, MODEL_PATH)
     joblib.dump(scaler, SCALER_PATH)
 
     metadata = {
-        "model_name": "neural_network_model",
+        "model_name": "MLPRegressor (Neural Network Regressor)",
         "features": FEATURE_COLUMNS,
         "target": TARGET_COLUMN,
-        "r2": float(r2),
-        "mae": float(mae),
-        "rmse": float(rmse),
+        "train_test_split": {"test_size": 0.2, "random_state": 42},
+        "key_hyperparameters": {
+            "activation": "relu",
+            "solver": "adam",
+            "max_iter": 3000,
+            "cv_folds": 3,
+        },
+        "best_parameters_used": {
+            key: list(value) if key == "hidden_layer_sizes" else value
+            for key, value in search.best_params_.items()
+        },
+        "before_tuning_test_r2": float(baseline_r2),
+        "after_tuning_test_r2": float(r2),
+        "test_metrics": {
+            "mae": float(mae),
+            "mse": float(mse),
+            "rmse": float(rmse),
+            "r2": float(r2),
+        },
         "model_path": str(MODEL_PATH),
         "scaler_path": str(SCALER_PATH),
     }
