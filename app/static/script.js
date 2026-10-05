@@ -17,16 +17,25 @@
   };
 
   // Theme switching (saved to localStorage)
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    if (themeToggle) {
+      const isDark = theme === 'dark';
+      themeToggle.setAttribute('title', isDark ? 'Switch to light mode' : 'Switch to dark mode');
+      themeToggle.setAttribute('aria-label', isDark ? 'Switch to light mode' : 'Switch to dark mode');
+    }
+  }
+
   function initTheme() {
     const savedTheme = localStorage.getItem('cs_theme') || 'light';
-    document.documentElement.setAttribute('data-theme', savedTheme);
+    applyTheme(savedTheme);
   }
 
   if (themeToggle) {
     themeToggle.addEventListener('click', () => {
       const current = document.documentElement.getAttribute('data-theme') || 'light';
       const next = current === 'dark' ? 'light' : 'dark';
-      document.documentElement.setAttribute('data-theme', next);
+      applyTheme(next);
       localStorage.setItem('cs_theme', next);
     });
   }
@@ -85,13 +94,36 @@
   // Clear button
   if (clearBtn) {
     clearBtn.addEventListener('click', () => {
+      // 1. Clear input values & validation attributes
       Object.values(inputs).forEach(input => {
         if (input) {
           input.value = '';
           input.removeAttribute('aria-invalid');
         }
       });
-      document.querySelectorAll('.error').forEach(e => e.style.display = 'none');
+
+      // 2. Hide error messages
+      document.querySelectorAll('.error').forEach(e => {
+        e.style.display = 'none';
+      });
+
+      // 3. Reset prediction display to ready state (≈ 0 MPa)
+      const predictionVal = document.getElementById('prediction-result-val');
+      const predictionExact = document.getElementById('prediction-exact-val');
+      const meterFill = document.getElementById('prediction-meter-fill');
+      const badgeText = document.getElementById('prediction-badge-text');
+
+      if (predictionVal) predictionVal.textContent = '≈ 0 MPa';
+      if (predictionExact) predictionExact.textContent = '0.00 MPa';
+      if (meterFill) meterFill.style.width = '0%';
+      if (badgeText) badgeText.textContent = 'Ready for Prediction';
+
+      // 4. Clean browser history state
+      if (window.history && window.history.replaceState) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+
+      // 5. Reset live ratio calculations
       updateLiveAnalytics();
     });
   }
