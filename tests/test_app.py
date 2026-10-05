@@ -71,3 +71,14 @@ def test_non_numeric_values_are_reported_without_predicting():
     assert response.status_code == 400
     assert b"Enter a valid number." in response.data
     assert model.inputs is None
+
+
+def test_default_app_loads_model_and_predicts():
+    from app.app import app
+
+    client = app.test_client()
+    response = client.post("/", data=valid_form_data())
+
+    assert response.status_code == 200
+    assert b"MPa" in response.data
+

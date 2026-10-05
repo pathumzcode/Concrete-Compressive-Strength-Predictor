@@ -2,6 +2,7 @@ import math
 from pathlib import Path
 
 import joblib
+import pickle
 import numpy as np
 import pandas as pd
 from flask import Flask, render_template, request
@@ -22,6 +23,16 @@ FEATURES = (
     {"name": "age", "label": "Curing age", "unit": "days"},
 )
 FEATURE_COLUMNS = tuple(feature["name"] for feature in FEATURES)
+
+
+def _load_trained_model():
+    if not MODEL_PATH.exists():
+        raise FileNotFoundError(f"Model file not found at {MODEL_PATH}")
+    try:
+        return joblib.load(MODEL_PATH)
+    except Exception:
+        with open(MODEL_PATH, "rb") as f:
+            return pickle.load(f)
 
 
 def create_app(model=None):
@@ -56,21 +67,26 @@ def create_app(model=None):
                     values[name] = min(value, _F32_MAX)
 
             if not errors:
-                model = app.config["MODEL"]
+                model = app.config.get("MODEL")
                 if model is None:
-                    model = joblib.load(MODEL_PATH)
-                    app.config["MODEL"] = model
+                    try:
+                        model = _load_trained_model()
+                        app.config["MODEL"] = model
+                    except Exception as exc:
+                        for name in FEATURE_COLUMNS:
+                            errors[name] = f"Error loading model: {exc}"
 
-                inputs = pd.DataFrame(
-                    [[values[name] for name in FEATURE_COLUMNS]],
-                    columns=FEATURE_COLUMNS,
-                )
-                try:
-                    prediction = float(model.predict(inputs)[0])
-                except (ValueError, OverflowError) as exc:
-                    for name in FEATURE_COLUMNS:
-                        errors[name] = str(exc)
-                    prediction = None
+                if model is not None:
+                    inputs = pd.DataFrame(
+                        [[values[name] for name in FEATURE_COLUMNS]],
+                        columns=FEATURE_COLUMNS,
+                    )
+                    try:
+                        prediction = float(model.predict(inputs)[0])
+                    except (ValueError, OverflowError) as exc:
+                        for name in FEATURE_COLUMNS:
+                            errors[name] = str(exc)
+                        prediction = None
 
         model_type = "Random Forest Regressor"
         configured_model = app.config.get("MODEL")
