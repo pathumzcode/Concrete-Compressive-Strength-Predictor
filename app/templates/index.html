@@ -1,116 +1,220 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Concrete Strength Predictor</title>
-    <style>
-      :root {
-        color-scheme: light;
-        font-family: Inter, "Segoe UI", sans-serif;
-        color: #17231d;
-        background: #f1f5f1;
-      }
-      * { box-sizing: border-box; }
-      body { margin: 0; padding: 48px 18px; }
-      main {
-        width: min(100%, 720px);
-        margin: 0 auto;
-        padding: 36px;
-        border: 1px solid #dce5dd;
-        border-radius: 20px;
-        background: #fff;
-        box-shadow: 0 18px 50px #1d392012;
-      }
-      .eyebrow {
-        margin: 0 0 8px;
-        color: #358253;
-        font-size: .78rem;
-        font-weight: 700;
-        letter-spacing: .12em;
-        text-transform: uppercase;
-      }
-      h1 { margin: 0; font-size: clamp(1.7rem, 5vw, 2.35rem); }
-      .intro { margin: 10px 0 28px; color: #5e6d63; line-height: 1.55; }
-      .fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
-      label { display: block; margin-bottom: 7px; font-size: .92rem; font-weight: 650; }
-      label span { color: #758279; font-weight: 400; }
-      input {
-        width: 100%;
-        padding: 12px 13px;
-        border: 1px solid #ccd8ce;
-        border-radius: 9px;
-        color: inherit;
-        font: inherit;
-      }
-      input:focus { border-color: #358253; outline: 3px solid #35825320; }
-      input[aria-invalid="true"] { border-color: #b42318; }
-      .error { margin: 6px 0 0; color: #b42318; font-size: .82rem; }
-      button {
-        width: 100%;
-        margin-top: 24px;
-        padding: 14px 18px;
-        border: 0;
-        border-radius: 10px;
-        background: #246b40;
-        color: white;
-        cursor: pointer;
-        font: inherit;
-        font-weight: 700;
-      }
-      button:hover { background: #1b5834; }
-      .result {
-        margin-top: 22px;
-        padding: 20px;
-        border: 1px solid #bfe1c9;
-        border-radius: 12px;
-        background: #eff9f1;
-      }
-      .result p { margin: 0 0 4px; color: #45624e; }
-      .result strong { color: #174a2b; font-size: 2rem; }
-      @media (max-width: 560px) {
-        body { padding: 20px 12px; }
-        main { padding: 24px 18px; }
-        .fields { grid-template-columns: 1fr; gap: 14px; }
-      }
-    </style>
-  </head>
-  <body>
-    <main>
-      <p class="eyebrow">Concrete mix estimator</p>
-      <h1>Predict compressive strength</h1>
-      <p class="intro">Enter the mix quantities per cubic metre and the curing age. The model returns an estimated strength in MPa.</p>
 
-      <form method="post">
-        <div class="fields">
-          {% for feature in features %}
-            <div>
-              <label for="{{ feature.name }}">{{ feature.label }} <span>({{ feature.unit }})</span></label>
-              <input
-                id="{{ feature.name }}"
-                name="{{ feature.name }}"
-                type="number"
-                step="any"
-                min="{{ 1 if feature.name == 'age' else 0 }}"
-                value="{{ values.get(feature.name, '') }}"
-                required
-                aria-invalid="{{ 'true' if feature.name in errors else 'false' }}"
-              >
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description"
+    content="Predict concrete compressive strength using machine learning mix regression models. Google-themed modern civil engineering tool.">
+  <title>Concrete Strength Predictor — Google Minimalist Edition</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+  <!-- Google Style Top Bar -->
+  <header>
+    <div class="navbar">
+      <a href="/" class="brand">
+        <div class="brand-text">
+          <h1>Concrete Compressive Strength Predictor</h1>
+          <p>High-Precision ML Regression Engine</p>
+        </div>
+      </a>
+
+      <div class="header-actions">
+        <div class="model-badge" title="Trained Model Type">
+          <svg viewBox="0 0 24 24">
+            <path
+              d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.38-1 1.72V7h2a3 3 0 0 1 3 3v2h1.28c.34-.6.98-1 1.72-1a2 2 0 1 1 0 4c-.74 0-1.38-.4-1.72-1H18v2a3 3 0 0 1-3 3h-2v1.28c.6.34 1 .98 1 1.72a2 2 0 1 1-4 0c0-.74.4-1.38 1-1.72V19H9a3 3 0 0 1-3-3v-2H4.72c-.34.6-.98 1-1.72 1a2 2 0 1 1 0-4c.74 0 1.38.4 1.72 1H6v-2a3 3 0 0 1 3-3h2V5.72c-.6-.34-1-.98-1-1.72a2 2 0 0 1 2-2z" />
+          </svg>
+          <span>Model: {{ model_type|default('Random Forest Regressor') }}</span>
+        </div>
+        <button type="button" class="theme-btn" id="theme-toggle" title="Toggle Light/Dark Theme"
+          aria-label="Toggle theme">
+          <svg id="theme-icon" viewBox="0 0 24 24">
+            <path
+              d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Hero Header -->
+    <section class="hero">
+      <p class="eyebrow">Concrete mix estimator</p>
+      <h2 class="hero-title">Predict compressive strength</h2>
+      <p class="intro">Enter the mix quantities per cubic metre and the curing age. The model returns an estimated
+        strength in MPa.</p>
+    </section>
+
+    <!-- Main Dual Panel Grid -->
+    <div class="dashboard-grid">
+      <!-- Left Column: Form -->
+      <section class="card" aria-labelledby="form-heading">
+        <div class="card-header">
+          <div>
+            <h3 id="form-heading" class="card-title">Mix Batch Parameters</h3>
+            <p class="card-subtitle">Values quantified per 1.0 m³ of mixed concrete</p>
+          </div>
+          <button type="button" class="btn btn-secondary" id="btn-clear" style="padding: 6px 14px; font-size: 0.8rem;">
+            Clear All
+          </button>
+        </div>
+
+        <form method="post" id="prediction-form">
+          <div class="fields">
+            {% for feature in features %}
+            <div class="form-group">
+              <div class="field-label-wrapper">
+                <label for="{{ feature.name }}">{{ feature.label }}</label>
+                <span class="unit-pill">{{ feature.unit }}</span>
+              </div>
+              <div class="input-wrapper">
+                <input id="{{ feature.name }}" name="{{ feature.name }}" type="number" step="any"
+                  min="{{ 1 if feature.name == 'age' else 0 }}" value="{{ values.get(feature.name, '') }}" required
+                  placeholder="0.0" aria-invalid="{{ 'true' if feature.name in errors else 'false' }}">
+              </div>
               {% if feature.name in errors %}
-                <p class="error">{{ errors[feature.name] }}</p>
+              <p class="error" role="alert">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                  <path
+                    d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
+                </svg>
+                {{ errors[feature.name] }}
+              </p>
               {% endif %}
             </div>
-          {% endfor %}
-        </div>
-        <button type="submit">Estimate strength</button>
-      </form>
+            {% endfor %}
+          </div>
 
-      {% if prediction is not none %}
-        <section class="result" aria-live="polite">
-          <p>Estimated compressive strength</p>
-          <strong>{{ "%.2f"|format(prediction) }} MPa</strong>
+          <!-- Dynamic Live Mix Ratio Calculations -->
+          <div class="mix-analytics" id="live-mix-analytics" title="Computed automatically from active input fields">
+            <div class="metric-item">
+              <span class="metric-label">w/b ratio</span>
+              <span class="metric-value" id="calc-wb">—</span>
+              <span class="metric-hint">Target: 0.35–0.55</span>
+            </div>
+            <div class="metric-item">
+              <span class="metric-label">Total Binder</span>
+              <span class="metric-value" id="calc-binder">—</span>
+              <span class="metric-hint">Cement + Slag + Ash</span>
+            </div>
+            <div class="metric-item">
+              <span class="metric-label">Aggregates</span>
+              <span class="metric-value" id="calc-aggregate">—</span>
+              <span class="metric-hint">Coarse + Fine</span>
+            </div>
+            <div class="metric-item">
+              <span class="metric-label">Est. Density</span>
+              <span class="metric-value" id="calc-density">—</span>
+              <span class="metric-hint">kg/m³ total</span>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary" id="btn-submit">
+              <svg viewBox="0 0 24 24">
+                <path
+                  d="M19 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm6-10H6V6h12v1z" />
+              </svg>
+              Estimate strength
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Right Column: Results & Classification -->
+      <aside class="result-panel">
+        {% if prediction is not none %}
+        <section class="result-card result" aria-live="polite">
+          <div class="result-badge">
+            <span class="result-badge-dot"></span>
+            <span>Prediction Complete</span>
+          </div>
+          <p class="result-title">Estimated compressive strength</p>
+
+          <div class="result-val-row">
+            <strong id="prediction-result-val">{{ "%.2f"|format(prediction) }} MPa</strong>
+          </div>
+
+          <div class="result-val-secondary">
+            ≈ {{ "%.0f"|format(prediction * 145.0377) }} psi
+          </div>
+
+          <!-- Gauge Scale Indicator -->
+          <div class="meter-container">
+            <div class="meter-labels">
+              <span>0 MPa</span>
+              <span>50 MPa</span>
+              <span>100+ MPa</span>
+            </div>
+            <div class="meter-track" title="{{ " %.2f"|format(prediction) }} MPa on 0-100 MPa scale">
+              {% set meter_percent = [([prediction, 100]|min), 0]|max %}
+              <div class="meter-fill" style="width: {{ meter_percent }}%;"></div>
+            </div>
+          </div>
+
+          <!-- Classification Tier -->
+          <div class="classification-box">
+            <span class="classification-label">Classification:</span>
+            <span class="classification-tier">
+              {% if prediction <= 20 %} Low Strength (Non-structural) {% elif prediction <=40 %} Standard Structural
+                Concrete {% elif prediction <=60 %} High-Performance Concrete (HPC) {% else %} Ultra-High
+                Performance(UHPC) {% endif %} </span>
+          </div>
+
+          <div class="classification-box" style="margin-top: 8px;">
+            <span class="classification-label">Model Type:</span>
+            <span class="classification-tier">{{ model_type|default('Random Forest Regressor') }}</span>
+          </div>
+
+          <div class="copy-action">
+            <button type="button" class="btn-copy" id="btn-copy-result" data-result="{{ " %.2f"|format(prediction) }}
+              MPa">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                <path
+                  d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z" />
+              </svg>
+              Copy Predicted Strength
+            </button>
+          </div>
         </section>
-      {% endif %}
-    </main>
-  </body>
+        {% else %}
+        <!-- Interactive Empty State -->
+        <section class="result-card empty-state">
+          <div class="empty-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z" />
+            </svg>
+          </div>
+          <h4 class="empty-title">Ready for Prediction</h4>
+          <p class="empty-desc">Enter the mix parameters per cubic metre and curing age, then click "Estimate strength".
+          </p>
+        </section>
+        {% endif %}
+      </aside>
+    </div>
+  </main>
+
+  <!-- Google-style Minimal Footer -->
+  <footer>
+    <p>Concrete Compressive Strength Predictor • Machine Learning Regression Model • Developed by Pathum Lakshan Bandara
+    </p>
+  </footer>
+
+  <!-- Toast Notification Element -->
+  <div id="toast" class="toast" role="status" aria-live="polite">Copied to clipboard</div>
+
+  <!-- External Script -->
+  <script src="{{ url_for('static', filename='script.js') }}" defer></script>
+</body>
+
 </html>

@@ -2,11 +2,14 @@ import math
 from pathlib import Path
 
 import joblib
+import numpy as np
 import pandas as pd
 from flask import Flask, render_template, request
 
+_F32_MAX = float(np.finfo(np.float32).max)
+
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-MODEL_PATH = PROJECT_ROOT / "models" / "trained" / "concrete_strength_model.pkl"
+MODEL_PATH = PROJECT_ROOT / "models" / "trained" / "random_forest.pkl"
 
 FEATURES = (
     {"name": "cement", "label": "Cement", "unit": "kg/m³"},
@@ -50,7 +53,7 @@ def create_app(model=None):
                 elif name == "age" and value == 0:
                     errors[name] = "Curing age must be greater than zero."
                 else:
-                    values[name] = value
+                    values[name] = min(value, _F32_MAX)
 
             if not errors:
                 model = app.config["MODEL"]
@@ -62,7 +65,18 @@ def create_app(model=None):
                     [[values[name] for name in FEATURE_COLUMNS]],
                     columns=FEATURE_COLUMNS,
                 )
-                prediction = float(model.predict(inputs)[0])
+                try:
+                    prediction = float(model.predict(inputs)[0])
+                except (ValueError, OverflowError) as exc:
+                    for name in FEATURE_COLUMNS:
+                        errors[name] = str(exc)
+                    prediction = None
+
+        model_type = "Random Forest Regressor"
+        configured_model = app.config.get("MODEL")
+        if configured_model is not None:
+            cls_name = type(configured_model).__name__
+            model_type = "Random Forest Regressor" if cls_name == "RandomForestRegressor" else cls_name
 
         return (
             render_template(
@@ -71,6 +85,7 @@ def create_app(model=None):
                 values=values,
                 errors=errors,
                 prediction=prediction,
+                model_type=model_type,
             ),
             400 if errors else 200,
         )
